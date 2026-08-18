@@ -66,6 +66,85 @@
 
     window.addEventListener('scroll', updateTimeline, { passive: true });
     updateTimeline();
+
+    const cloudEl = document.getElementById('skills-cloud');
+    const cloudTags = Array.from(document.querySelectorAll('.cloud-tag'));
+
+    cloudTags.forEach(tag => {
+      tag.style.setProperty('--dur', (4 + Math.random() * 3).toFixed(2) + 's');
+      tag.style.setProperty('--delay', '-' + (Math.random() * 5).toFixed(2) + 's');
+    });
+
+    function rectsOverlap(x, y, w, h, r, pad) {
+      return !(x + w + pad < r.x || x > r.x + r.w + pad || y + h + pad < r.y || y > r.y + r.h + pad);
+    }
+
+    function layoutCloud() {
+      if (!cloudEl) return;
+      const width = cloudEl.clientWidth;
+      const cx = width / 2;
+      const ordered = [...cloudTags].sort((a, b) => b.dataset.weight - a.dataset.weight);
+      const placed = [];
+      let minTop = Infinity;
+      let maxBottom = 0;
+
+      ordered.forEach(tag => {
+        const w = tag.offsetWidth;
+        const h = tag.offsetHeight;
+
+        const margin = w * 0.15;
+        let t = 0;
+        let x = cx - w / 2;
+        let y = -h / 2;
+        let found = false;
+        while (!found && t < 40000) {
+          const radius = 3 * Math.sqrt(t);
+          const angle = t * 0.1;
+          x = cx + radius * Math.cos(angle) - w / 2;
+          y = radius * Math.sin(angle) * 0.62 - h / 2;
+          const inBounds = x >= -margin && x + w <= width + margin;
+          found = inBounds && !placed.some(r => rectsOverlap(x, y, w, h, r, 8));
+          t += 2;
+        }
+
+        placed.push({ x, y, w, h, tag });
+        minTop = Math.min(minTop, y);
+        maxBottom = Math.max(maxBottom, y + h);
+      });
+
+      const offsetY = -minTop + 24;
+      placed.forEach(p => {
+        p.tag.style.left = p.x + 'px';
+        p.tag.style.top = (p.y + offsetY) + 'px';
+        p.tag.style.visibility = 'visible';
+      });
+      cloudEl.style.height = (maxBottom - minTop + 48) + 'px';
+    }
+
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(layoutCloud);
+    } else {
+      layoutCloud();
+    }
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(layoutCloud, 200);
+    });
+
+    const filterBtns = document.querySelectorAll('.skills-filter');
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const cat = btn.dataset.filter;
+        cloudTags.forEach(tag => {
+          const matches = cat === 'all' || tag.dataset.cat === cat;
+          tag.classList.toggle('dim', !matches);
+          tag.classList.toggle('match', matches && cat !== 'all');
+        });
+      });
+    });
   });
 </script>
 <body>
@@ -77,7 +156,6 @@
         <li><a href="#projects">Projects</a></li>
         <li><a href="#experience">Experience</a></li>
         <li><a href="#skills">Skills</a></li>
-        <li><a href="#contact">Contact Me</a></li>
       </ul>
     </nav>
   </header>
@@ -112,59 +190,197 @@
     </div>
     <h1 class="Hello">About Me</h1>
     <p class="about_me">Hi, I am Aahana Surya! I am an undergraduate student at Northeastern Univerity, studying computer science with a concentration in AI and minor in Robotics. I love programming, and this is my personal website.</p>
+
+    <!-- From Uiverse.io by Valeron-T -->
+    <div class="social-card">
+      <a class="social-link1" href="mailto:aahana.gys@gmail.com" aria-label="Email">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+          <path d="m3 7 9 6 9-6"></path>
+        </svg>
+      </a>
+      <a class="social-link2" href="https://github.com/aahana-surya" target="_blank" rel="noopener" aria-label="GitHub">
+        <svg viewBox="0 0 496 512" fill="#fff" xmlns="http://www.w3.org/2000/svg">
+          <path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z">
+          </path>
+        </svg>
+      </a>
+      <a class="social-link3" href="https://www.linkedin.com/in/aahana-surya-689232315" target="_blank" rel="noopener" aria-label="LinkedIn">
+        <svg fill="#fff" viewBox="0 0 448 512" xmlns="http://www.w3.org/2000/svg">
+          <path d="M100.28 448H7.4V148.9h92.88zM53.79 108.1C24.09 108.1 0 83.5 0 53.8a53.79 53.79 0 0 1 107.58 0c0 29.7-24.1 54.3-53.79 54.3zM447.9 448h-92.68V302.4c0-34.7-.7-79.2-48.29-79.2-48.29 0-55.69 37.7-55.69 76.7V448h-92.78V148.9h89.08v40.8h1.3c12.4-23.5 42.69-48.3 87.88-48.3 94 0 111.28 61.9 111.28 142.3V448z">
+          </path>
+        </svg>
+      </a>
+    </div>
   </div>
 
   <div id="projects" class="projects fade-in">
+    <div class="stars-bg">
+      <div id="stars"></div>
+      <div id="stars2"></div>
+      <div id="stars3"></div>
+    </div>
     <h2 class="proj">Projects</h2>
-    <div class="project-container">
-      <a class="project-tile" href="https://aahana-world-cup-predictor.streamlit.app">
-        <div class="project-tile-preview" style="background-image:url('main site/img/worldcup.png')"></div>
-        <div class="project-tile-content">
-          <h3>World Cup Predictor</h3>
-          <p>An interactive Streamlit using AI to compare teams, simulate outcomes, and explore match predictions, in collaboration with the IBMSkillBuild Challenge.</p>
-          <span class="project-tile-button">View</span>
-        </div>
-      </a>
-      <a class="project-tile" href="https://aahana-surya.github.io/wordle/">
-        <div class="project-tile-preview" style="background-image:url('main site/img/wordle.png')"></div>
-        <div class="project-tile-content">
-          <h3>Wordle</h3>
-          <p>A remake of the popular word guessing game, a tribute to my love for NYT games.</p>
-          <span class="project-tile-button">View</span>
-        </div>
-      </a>
-      <a class="project-tile" href="https://aahana-surya.github.io/drum-kit/">
-        <div class="project-tile-preview" style="background-image:url('main site/img/drumkit.png')"></div>
-        <div class="project-tile-content">
-          <h3>Drum Kit</h3>
-          <p>A tactile soundboard with animated note feedback and rhythm-driven interaction.</p>
-          <span class="project-tile-button">View</span>
-        </div>
-      </a>
-      <a class="project-tile" href="https://aahana-surya.github.io/weather-app/">
-        <div class="project-tile-preview" style="background-image:url('main site/img/weather-app.png')"></div>
-        <div class="project-tile-content">
-          <h3>Weather App</h3>
-          <p>A responsive forecast tool with to find local weather and climate information for any location. Built for PM Accelerator Internship.</p>
-          <span class="project-tile-button">View</span>
-        </div>
-      </a>
-      <a class="project-tile" href="https://aahana-surya.github.io/todolist/">
-        <div class="project-tile-preview" style="background-image:url('main site/img/todolist.png')"></div>
-        <div class="project-tile-content">
-          <h3>To Do List</h3>
-          <p>A mini project to manage daily tasks with a clean and intuitive interface.</p>
-          <span class="project-tile-button">View</span>
-        </div>
-      </a>
-      <a class="project-tile" href="https://aahana-surya.github.io/qr-code-generator/">
-        <div class="project-tile-preview" style="background-image:url('main site/img/qr.png')"></div>
-        <div class="project-tile-content">
-          <h3>QR Code Generator</h3>
-          <p>Generate share-ready QR codes for any link instantly for quick access.</p>
-          <span class="project-tile-button">View</span>
-        </div>
-      </a>
+    <div class="finder-window">
+      <div class="finder-toolbar">
+        <span class="finder-dot dot-red"></span>
+        <span class="finder-dot dot-yellow"></span>
+        <span class="finder-dot dot-green"></span>
+        <span class="finder-title">Projects — Finder</span>
+      </div>
+      <div class="finder-grid">
+
+        <a class="folder-card" href="https://aahana-world-cup-predictor.streamlit.app">
+          <div class="folder-container">
+            <svg class="folder-back" viewBox="0 0 50 40" fill="none">
+              <path d="M0 4C0 1.79086 1.79086 0 4 0H16.524C17.721 0 18.8415 0.54051 19.574 1.4673L22.426 5.0654C23.1585 5.99219 24.279 6.5327 25.476 6.5327H46C48.2091 6.5327 50 8.32356 50 10.5327V36C50 38.2091 48.2091 40 46 40H4C1.79086 40 0 38.2091 0 36V4Z" fill="#2f6fe0"></path>
+            </svg>
+            <div class="file file-cup" style="background-image:url('main site/img/worldcup.png')">
+              <div class="shine"></div>
+              <div class="file-text">World Cup Predictor</div>
+              <div class="file-desc">AI-powered Streamlit app that predicts match outcomes. Built for the IBM SkillsBuild Challenge.</div>
+              <div class="file-tag">View App</div>
+            </div>
+            <div class="folder-front-wrapper">
+              <svg class="folder-front" viewBox="0 0 50 34" fill="none">
+                <path d="M0 4C0 1.79086 1.79086 0 4 0H46C48.2091 0 50 1.79086 50 4V30C50 32.2091 48.2091 34 46 34H4C1.79086 34 0 32.2091 0 30V4Z" fill="rgba(58, 134, 255, 0.65)"></path>
+              </svg>
+              <div class="folder-label"></div>
+              <div class="counter">
+                <div class="status-dot"></div>
+                <span class="counter-label">LIVE</span>
+              </div>
+            </div>
+          </div>
+          <span class="folder-name">World Cup Predictor</span>
+        </a>
+
+        <a class="folder-card" href="https://aahana-surya.github.io/wordle/">
+          <div class="folder-container">
+            <svg class="folder-back" viewBox="0 0 50 40" fill="none">
+              <path d="M0 4C0 1.79086 1.79086 0 4 0H16.524C17.721 0 18.8415 0.54051 19.574 1.4673L22.426 5.0654C23.1585 5.99219 24.279 6.5327 25.476 6.5327H46C48.2091 6.5327 50 8.32356 50 10.5327V36C50 38.2091 48.2091 40 46 40H4C1.79086 40 0 38.2091 0 36V4Z" fill="#2f6fe0"></path>
+            </svg>
+            <div class="file file-wordle" style="background-image:url('main site/img/wordle.png')">
+              <div class="shine"></div>
+              <div class="file-text">Wordle</div>
+              <div class="file-desc">A remake of the classic NYT word-guessing game.</div>
+              <div class="file-tag">Play</div>
+            </div>
+            <div class="folder-front-wrapper">
+              <svg class="folder-front" viewBox="0 0 50 34" fill="none">
+                <path d="M0 4C0 1.79086 1.79086 0 4 0H46C48.2091 0 50 1.79086 50 4V30C50 32.2091 48.2091 34 46 34H4C1.79086 34 0 32.2091 0 30V4Z" fill="rgba(58, 134, 255, 0.65)"></path>
+              </svg>
+              <div class="folder-label"></div>
+              <div class="counter">
+                <div class="status-dot"></div>
+                <span class="counter-label">LIVE</span>
+              </div>
+            </div>
+          </div>
+          <span class="folder-name">Wordle</span>
+        </a>
+
+        <a class="folder-card" href="https://aahana-surya.github.io/drum-kit/">
+          <div class="folder-container">
+            <svg class="folder-back" viewBox="0 0 50 40" fill="none">
+              <path d="M0 4C0 1.79086 1.79086 0 4 0H16.524C17.721 0 18.8415 0.54051 19.574 1.4673L22.426 5.0654C23.1585 5.99219 24.279 6.5327 25.476 6.5327H46C48.2091 6.5327 50 8.32356 50 10.5327V36C50 38.2091 48.2091 40 46 40H4C1.79086 40 0 38.2091 0 36V4Z" fill="#2f6fe0"></path>
+            </svg>
+            <div class="file file-drum" style="background-image:url('main site/img/drumkit.png')">
+              <div class="shine"></div>
+              <div class="file-text">Drum Kit</div>
+              <div class="file-desc">Tactile soundboard with animated, rhythm-driven feedback.</div>
+              <div class="file-tag">Play</div>
+            </div>
+            <div class="folder-front-wrapper">
+              <svg class="folder-front" viewBox="0 0 50 34" fill="none">
+                <path d="M0 4C0 1.79086 1.79086 0 4 0H46C48.2091 0 50 1.79086 50 4V30C50 32.2091 48.2091 34 46 34H4C1.79086 34 0 32.2091 0 30V4Z" fill="rgba(58, 134, 255, 0.65)"></path>
+              </svg>
+              <div class="folder-label"></div>
+              <div class="counter">
+                <div class="status-dot"></div>
+                <span class="counter-label">LIVE</span>
+              </div>
+            </div>
+          </div>
+          <span class="folder-name">Drum Kit</span>
+        </a>
+
+        <a class="folder-card" href="https://aahana-surya.github.io/weather-app/">
+          <div class="folder-container">
+            <svg class="folder-back" viewBox="0 0 50 40" fill="none">
+              <path d="M0 4C0 1.79086 1.79086 0 4 0H16.524C17.721 0 18.8415 0.54051 19.574 1.4673L22.426 5.0654C23.1585 5.99219 24.279 6.5327 25.476 6.5327H46C48.2091 6.5327 50 8.32356 50 10.5327V36C50 38.2091 48.2091 40 46 40H4C1.79086 40 0 38.2091 0 36V4Z" fill="#2f6fe0"></path>
+            </svg>
+            <div class="file file-weather" style="background-image:url('main site/img/weather-app.png')">
+              <div class="shine"></div>
+              <div class="file-text">Weather App</div>
+              <div class="file-desc">Live forecasts and climate data for any location. Built for PM Accelerator.</div>
+              <div class="file-tag">View App</div>
+            </div>
+            <div class="folder-front-wrapper">
+              <svg class="folder-front" viewBox="0 0 50 34" fill="none">
+                <path d="M0 4C0 1.79086 1.79086 0 4 0H46C48.2091 0 50 1.79086 50 4V30C50 32.2091 48.2091 34 46 34H4C1.79086 34 0 32.2091 0 30V4Z" fill="rgba(58, 134, 255, 0.65)"></path>
+              </svg>
+              <div class="folder-label"></div>
+              <div class="counter">
+                <div class="status-dot"></div>
+                <span class="counter-label">LIVE</span>
+              </div>
+            </div>
+          </div>
+          <span class="folder-name">Weather App</span>
+        </a>
+
+        <a class="folder-card" href="https://aahana-surya.github.io/todolist/">
+          <div class="folder-container">
+            <svg class="folder-back" viewBox="0 0 50 40" fill="none">
+              <path d="M0 4C0 1.79086 1.79086 0 4 0H16.524C17.721 0 18.8415 0.54051 19.574 1.4673L22.426 5.0654C23.1585 5.99219 24.279 6.5327 25.476 6.5327H46C48.2091 6.5327 50 8.32356 50 10.5327V36C50 38.2091 48.2091 40 46 40H4C1.79086 40 0 38.2091 0 36V4Z" fill="#2f6fe0"></path>
+            </svg>
+            <div class="file file-todo" style="background-image:url('main site/img/todolist.png')">
+              <div class="shine"></div>
+              <div class="file-text">To Do List</div>
+              <div class="file-desc">A clean, minimal app for managing daily tasks.</div>
+              <div class="file-tag">View App</div>
+            </div>
+            <div class="folder-front-wrapper">
+              <svg class="folder-front" viewBox="0 0 50 34" fill="none">
+                <path d="M0 4C0 1.79086 1.79086 0 4 0H46C48.2091 0 50 1.79086 50 4V30C50 32.2091 48.2091 34 46 34H4C1.79086 34 0 32.2091 0 30V4Z" fill="rgba(58, 134, 255, 0.65)"></path>
+              </svg>
+              <div class="folder-label"></div>
+              <div class="counter">
+                <div class="status-dot"></div>
+                <span class="counter-label">LIVE</span>
+              </div>
+            </div>
+          </div>
+          <span class="folder-name">To Do List</span>
+        </a>
+
+        <a class="folder-card" href="https://aahana-surya.github.io/qr-code-generator/">
+          <div class="folder-container">
+            <svg class="folder-back" viewBox="0 0 50 40" fill="none">
+              <path d="M0 4C0 1.79086 1.79086 0 4 0H16.524C17.721 0 18.8415 0.54051 19.574 1.4673L22.426 5.0654C23.1585 5.99219 24.279 6.5327 25.476 6.5327H46C48.2091 6.5327 50 8.32356 50 10.5327V36C50 38.2091 48.2091 40 46 40H4C1.79086 40 0 38.2091 0 36V4Z" fill="#2f6fe0"></path>
+            </svg>
+            <div class="file file-qr" style="background-image:url('main site/img/qr.png')">
+              <div class="shine"></div>
+              <div class="file-text">QR Code Generator</div>
+              <div class="file-desc">Generate share-ready QR codes for any link instantly.</div>
+              <div class="file-tag">View App</div>
+            </div>
+            <div class="folder-front-wrapper">
+              <svg class="folder-front" viewBox="0 0 50 34" fill="none">
+                <path d="M0 4C0 1.79086 1.79086 0 4 0H46C48.2091 0 50 1.79086 50 4V30C50 32.2091 48.2091 34 46 34H4C1.79086 34 0 32.2091 0 30V4Z" fill="rgba(58, 134, 255, 0.65)"></path>
+              </svg>
+              <div class="folder-label"></div>
+              <div class="counter">
+                <div class="status-dot"></div>
+                <span class="counter-label">LIVE</span>
+              </div>
+            </div>
+          </div>
+          <span class="folder-name">QR Code Generator</span>
+        </a>
+
+      </div>
     </div>
   </div>
 
@@ -174,35 +390,35 @@
       <div class="tl-rail"></div>
       <div class="tl-fill" id="tl-fill"></div>
 
-      <div class="tl-item">
+      <div class="tl-item tl-left">
         <div class="tl-dot"></div>
-        <p class="tl-period">Summer 2026</p>
-        <p class="tl-title">Sports Media, Inc.</p>
-        <p class="tl-role">AI Systems Integrator Intern</p>
+        <p class="tl-period">June 2026 &ndash; Present</p>
+        <p class="tl-title">Northeastern University PARCS Lab</p>
+        <p class="tl-role">Research Assistant, Human-Robot Interaction</p>
       </div>
 
-      <div class="tl-item">
+      <div class="tl-item tl-right">
         <div class="tl-dot"></div>
-        <p class="tl-period">Summer 2026</p>
-        <p class="tl-title">PM Accelerator</p>
-        <p class="tl-role">Frontend Engineer Intern</p>
+        <p class="tl-period">June 2026 &ndash; August 2026</p>
+        <p class="tl-title">AdReady.ai</p>
+        <p class="tl-role">Software Engineering Intern</p>
       </div>
 
-      <div class="tl-item">
+      <div class="tl-item tl-left">
         <div class="tl-dot"></div>
         <p class="tl-period">Oct 2025 &ndash; May 2026</p>
         <p class="tl-title">City of Oakland</p>
         <p class="tl-role">AI Research Analyst</p>
       </div>
 
-      <div class="tl-item">
+      <div class="tl-item tl-right">
         <div class="tl-dot"></div>
         <p class="tl-period">Sep 2025 &ndash; May 2026</p>
         <p class="tl-title">Northeastern Machine Learning Club</p>
         <p class="tl-role">Secretary &amp; Instructor</p>
       </div>
 
-      <div class="tl-item">
+      <div class="tl-item tl-left">
         <div class="tl-dot"></div>
         <p class="tl-period">Jul &ndash; Sep 2024</p>
         <p class="tl-title">Joyful Pets</p>
@@ -213,72 +429,58 @@
 
   <div id="skills" class="skills fade-in">
     <h2 class="section-title">Skills</h2>
-    <div class="skill-grid">
-      <div class="skill-card">
-        <h3 class="skill-card-title">Programming</h3>
-        <div class="skill-tags">
-          <span>Python</span><span>Java</span><span>Kotlin</span><span>JavaScript (React.js)</span><span>HTML/CSS</span><span>C#</span>
-        </div>
-      </div>
-      <div class="skill-card">
-        <h3 class="skill-card-title">AI / ML</h3>
-        <div class="skill-tags">
-          <span>LLM integration</span><span>Prompt engineering</span><span>AI agent design</span><span>OpenAI</span><span>Google AI Studio</span><span>scikit-learn</span><span>Model evaluation &amp; testing</span>
-        </div>
-      </div>
-      <div class="skill-card">
-        <h3 class="skill-card-title">Data</h3>
-        <div class="skill-tags">
-          <span>NumPy</span><span>Pandas</span><span>Excel</span><span>Google Sheets</span><span>Google Forms</span><span>Survey design &amp; analysis</span><span>Qualitative coding</span><span>Data cleaning</span>
-        </div>
-      </div>
-      <div class="skill-card">
-        <h3 class="skill-card-title">Cloud &amp; Tools</h3>
-        <div class="skill-tags">
-          <span>AWS</span><span>Git/GitHub</span><span>Google Workspace</span><span>Microsoft Office</span><span>VSCode</span><span>Jupyter Lab/Notebook</span>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <div id="contact" class="contact-section fade-in">
-    <h2 class="section-title">Let&#8217;s Connect</h2>
-    <p class="contact-lead">I&#8217;m open to AI engineering, ML research, and software internship roles. Feel free to reach out.</p>
-    <div class="contact-cards">
-      <a class="contact-card" href="mailto:aahana.gys@gmail.com">
-        <span class="contact-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="5" width="18" height="14" rx="2"></rect>
-            <path d="m3 7 9 6 9-6"></path>
-          </svg>
-        </span>
-        <span class="contact-meta">
-          <span class="contact-label">Email</span>
-          <span class="contact-value">aahana.gys@gmail.com</span>
-        </span>
-      </a>
-      <a class="contact-card" href="https://github.com/aahana-surya" target="_blank" rel="noopener">
-        <span class="contact-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 .5C5.73.5.5 5.74.5 12.02c0 5.1 3.29 9.41 7.86 10.94.58.11.79-.25.79-.56 0-.27-.01-1.01-.02-1.98-3.2.69-3.88-1.54-3.88-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.21-1.49 3.18-1.18 3.18-1.18.63 1.59.23 2.76.11 3.05.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14 0 1.55-.01 2.8-.01 3.18 0 .31.21.68.8.56A11.52 11.52 0 0 0 23.5 12.02C23.5 5.74 18.27.5 12 .5Z"></path>
-          </svg>
-        </span>
-        <span class="contact-meta">
-          <span class="contact-label">GitHub</span>
-          <span class="contact-value">github.com/aahana-surya</span>
-        </span>
-      </a>
-      <a class="contact-card" href="https://www.linkedin.com/in/aahana-surya-689232315" target="_blank" rel="noopener">
-        <span class="contact-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28ZM5.34 7.43a2.07 2.07 0 1 1 0-4.14 2.07 2.07 0 0 1 0 4.14ZM7.12 20.45H3.55V9h3.57v11.45ZM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.22.79 24 1.77 24h20.45c.98 0 1.78-.78 1.78-1.73V1.73C24 .77 23.2 0 22.22 0Z"></path>
-          </svg>
-        </span>
-        <span class="contact-meta">
-          <span class="contact-label">LinkedIn</span>
-          <span class="contact-value">in/aahana-surya</span>
-        </span>
-      </a>
+    <div class="skills-filters" id="skills-filters">
+      <button class="skills-filter active" data-filter="all">All</button>
+      <button class="skills-filter" data-filter="languages"><span class="filter-dot" data-cat="languages"></span>Languages</button>
+      <button class="skills-filter" data-filter="ai"><span class="filter-dot" data-cat="ai"></span>AI / ML</button>
+      <button class="skills-filter" data-filter="robotics"><span class="filter-dot" data-cat="robotics"></span>Robotics &amp; CV</button>
+      <button class="skills-filter" data-filter="webcloud"><span class="filter-dot" data-cat="webcloud"></span>Web, Cloud &amp; Data</button>
+    </div>
+
+    <div class="skills-cloud" id="skills-cloud">
+      <span class="cloud-tag" data-cat="languages" data-weight="3">Python</span>
+      <span class="cloud-tag" data-cat="languages" data-weight="2">Java</span>
+      <span class="cloud-tag" data-cat="languages" data-weight="2">JavaScript</span>
+      <span class="cloud-tag" data-cat="languages" data-weight="2">HTML/CSS</span>
+      <span class="cloud-tag" data-cat="languages" data-weight="1">C++</span>
+      <span class="cloud-tag" data-cat="languages" data-weight="1">Kotlin</span>
+      <span class="cloud-tag" data-cat="languages" data-weight="1">SQL</span>
+      <span class="cloud-tag" data-cat="languages" data-weight="1">C#</span>
+      <span class="cloud-tag" data-cat="languages" data-weight="1">MATLAB</span>
+
+      <span class="cloud-tag" data-cat="ai" data-weight="3">LLM integration</span>
+      <span class="cloud-tag" data-cat="ai" data-weight="3">Prompt engineering</span>
+      <span class="cloud-tag" data-cat="ai" data-weight="3">Computer vision</span>
+      <span class="cloud-tag" data-cat="ai" data-weight="3">OpenAI API</span>
+      <span class="cloud-tag" data-cat="ai" data-weight="2">AI agent design</span>
+      <span class="cloud-tag" data-cat="ai" data-weight="2">Object detection</span>
+      <span class="cloud-tag" data-cat="ai" data-weight="2">scikit-learn</span>
+      <span class="cloud-tag" data-cat="ai" data-weight="2">Model evaluation &amp; testing</span>
+      <span class="cloud-tag" data-cat="ai" data-weight="1">Neural networks</span>
+      <span class="cloud-tag" data-cat="ai" data-weight="1">Vision-language models (VLMs)</span>
+      <span class="cloud-tag" data-cat="ai" data-weight="1">TensorFlow</span>
+      <span class="cloud-tag" data-cat="ai" data-weight="1">Google AI Studio</span>
+
+      <span class="cloud-tag" data-cat="robotics" data-weight="3">OpenCV </span>
+      <span class="cloud-tag" data-cat="robotics" data-weight="3">MediaPipe (hand/pose tracking)</span>
+      <span class="cloud-tag" data-cat="robotics" data-weight="2">Intel RealSense (RGB-D fusion)</span>
+      <span class="cloud-tag" data-cat="robotics" data-weight="2">PyObjC (macOS integration)</span>
+      <span class="cloud-tag" data-cat="robotics" data-weight="1">OCR (Tesseract)</span>
+
+      <span class="cloud-tag" data-cat="webcloud" data-weight="3">React</span>
+      <span class="cloud-tag" data-cat="webcloud" data-weight="3">TypeScript</span>
+      <span class="cloud-tag" data-cat="webcloud" data-weight="3">Git/GitHub</span>
+      <span class="cloud-tag" data-cat="webcloud" data-weight="2">AWS</span>
+      <span class="cloud-tag" data-cat="webcloud" data-weight="2">Flask</span>
+      <span class="cloud-tag" data-cat="webcloud" data-weight="2">Streamlit</span>
+      <span class="cloud-tag" data-cat="webcloud" data-weight="2">NumPy</span>
+      <span class="cloud-tag" data-cat="webcloud" data-weight="2">Pandas</span>
+      <span class="cloud-tag" data-cat="webcloud" data-weight="1">FastAPI</span>
+      <span class="cloud-tag" data-cat="webcloud" data-weight="1">Supabase (Postgres)</span>
+      <span class="cloud-tag" data-cat="webcloud" data-weight="1">Docker</span>
+      <span class="cloud-tag" data-cat="webcloud" data-weight="1">Matplotlib</span>
+      <span class="cloud-tag" data-cat="webcloud" data-weight="1">Jupyter</span>
     </div>
   </div>
 
