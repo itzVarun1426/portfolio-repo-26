@@ -47,6 +47,7 @@
       <ul class="nav-links">
         <li><a href="#about">About</a></li>
         <li><a href="#projects">Projects</a></li>
+        <li><a href="#reports">Reports</a></li>
         <li><a href="#experience">Experience</a></li>
         <li><a href="#skills">Skills</a></li>
       </ul>
@@ -245,6 +246,87 @@
           </div>
         </a>
 
+      </div>
+    </section>
+
+    <!-- ============ reports: a deep space downlink ============
+         Projects are worlds you visit; reports are the data those missions
+         sent home. Each row is one packet on the link — a live trace, a
+         signal bar, a format, and a way to pull it down. -->
+    <section class="section" id="reports">
+      <h2 class="section-title reveal" data-delay="1">Reports</h2>
+
+      <div class="dsn reveal" data-delay="2">
+
+        <div class="dsn-head">
+          <span class="dsn-tag">Deep Space Network</span>
+          <span class="dsn-head-rule"></span>
+          <span class="dsn-status"><i class="dsn-led"></i>Signal lock &middot; 04 packets</span>
+        </div>
+
+        <div class="dsn-list">
+
+          <a class="dsn-row" href="reports/cook-your-books-final-report.docx" style="--sig:86%">
+            <span class="dsn-id">TX&#8209;001</span>
+            <span class="dsn-body">
+              <span class="dsn-name">Cook Your Books Report</span>
+              <span class="dsn-desc"><span>Team 112 &mdash; a Java recipe manager on an MVVM + hexagonal
+                architecture, with a shared service layer behind both a GUI and a CLI.</span></span>
+            </span>
+            <span class="dsn-wave" aria-hidden="true"></span>
+            <span class="dsn-meta">
+              <span class="dsn-sig" aria-hidden="true"><i></i></span>
+              <span class="dsn-fmt">DOCX</span>
+            </span>
+            <span class="dsn-cta">Downlink <i>&#8594;</i></span>
+          </a>
+
+          <a class="dsn-row" href="reports/capture-2026-04-21.png" target="_blank" rel="noopener" style="--sig:64%">
+            <span class="dsn-id">TX&#8209;002</span>
+            <span class="dsn-body">
+              <span class="dsn-name">Cook Your Books Architecture Diagram / Snapshots</span>
+              <span class="dsn-desc"><span>The high&#8209;level ADR, the pull&#8209;request log and the interface
+                captures, on one board. Presented 21 April 2026.</span></span>
+            </span>
+            <span class="dsn-wave" aria-hidden="true"></span>
+            <span class="dsn-meta">
+              <span class="dsn-sig" aria-hidden="true"><i></i></span>
+              <span class="dsn-fmt">IMG</span>
+            </span>
+            <span class="dsn-cta">Downlink <i>&#8594;</i></span>
+          </a>
+
+          <a class="dsn-row" href="reports/cs4100-final-report.pdf" target="_blank" rel="noopener" style="--sig:100%">
+            <span class="dsn-id">TX&#8209;003</span>
+            <span class="dsn-body">
+              <span class="dsn-name">CSP Schedule Final Report</span>
+              <span class="dsn-desc"><span>A CSP&#8209;based club shift scheduler: solver comparison, soft&#8209;constraint
+                cost functions, and a Nash&#8209;stability search framed as a hedonic game.</span></span>
+            </span>
+            <span class="dsn-wave" aria-hidden="true"></span>
+            <span class="dsn-meta">
+              <span class="dsn-sig" aria-hidden="true"><i></i></span>
+              <span class="dsn-fmt">PDF &middot; 7p</span>
+            </span>
+            <span class="dsn-cta">Downlink <i>&#8594;</i></span>
+          </a>
+
+          <a class="dsn-row" href="reports/cs4100-hw3.pdf" target="_blank" rel="noopener" style="--sig:72%">
+            <span class="dsn-id">TX&#8209;004</span>
+            <span class="dsn-body">
+              <span class="dsn-name">Cat Classifier Neural Network Analysis</span>
+              <span class="dsn-desc"><span>What learning rate, epoch count and network depth each did to
+                accuracy and F1 &mdash; and where more capacity stopped helping.</span></span>
+            </span>
+            <span class="dsn-wave" aria-hidden="true"></span>
+            <span class="dsn-meta">
+              <span class="dsn-sig" aria-hidden="true"><i></i></span>
+              <span class="dsn-fmt">PDF &middot; 5p</span>
+            </span>
+            <span class="dsn-cta">Downlink <i>&#8594;</i></span>
+          </a>
+
+        </div>
       </div>
     </section>
 
@@ -563,6 +645,41 @@
       return false;
     });
   }
+
+  /* ---------------------------------------------------------
+     Reports: the signal trace on each downlink row.
+
+     Each trace is drawn twice, end to end, inside an SVG that is twice the
+     width of its container. Sliding it left by half its own width lands the
+     second copy exactly where the first started, so the scroll never seams.
+     A small seeded PRNG keeps every row's noise different but stable across
+     reloads — a fresh Math.random() each paint would make the panel jitter.
+     --------------------------------------------------------- */
+  document.querySelectorAll('.dsn-wave').forEach((wave, i) => {
+    const STEP = 2, HALF = 100, MID = 11;
+
+    let seed = (i + 1) * 9301;
+    const rand = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+
+    // mostly a low noise floor, with the occasional burst of traffic
+    const vals = [];
+    for (let x = 0; x <= HALF - STEP; x += STEP) {
+      const burst = rand() > 0.86 ? 1 : 0.28;
+      vals.push(MID + (rand() - 0.5) * 17 * burst);
+    }
+
+    const pts = [];
+    for (let copy = 0; copy < 2; copy++) {
+      vals.forEach((v, k) => pts.push((copy * HALF + k * STEP) + ',' + v.toFixed(1)));
+    }
+    // close the second copy on the first copy's opening value
+    pts.push((2 * HALF) + ',' + vals[0].toFixed(1));
+
+    wave.innerHTML =
+      '<svg viewBox="0 0 200 22" preserveAspectRatio="none">' +
+        '<polyline points="' + pts.join(' ') + '"/>' +
+      '</svg>';
+  });
 
   /* ---------------------------------------------------------
      Experience: five real star formations you can swipe between.
